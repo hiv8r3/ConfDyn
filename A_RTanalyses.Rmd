@@ -55,7 +55,10 @@ dat.use = dat[dat$Condition == 4|dat$Condition == 5,] %>%
   filter(Subject != 92) %>% 
   filter(Subject != 64)
 
+dat.use$Condition = paste(dat.use$prevTrialType, dat.use$TrialType, sep="_")
+
 tapply(dat.use$RTdrop100_2000, dat.use$TrialType, mean)
+tapply(dat.use$RTdrop100_2000, dat.use$Condition, mean)
 
 ```
 
@@ -100,11 +103,11 @@ ggplot(fin, aes(x = Previous, y = Estimate, group = Current, color = Current)) +
   geom_line() +
   geom_point(size = 4) +
   geom_errorbar(limits, width=0.2) +
-  scale_color_manual(values=c(1, 2), guide = guide_legend(title = "Current trial")) +
   ylab("Reaction Time (ms)") +
   xlab("Previous Trial") +
   ggtitle("Reaction Time")+
   coord_cartesian(ylim = c(350, 450)) +
+  scale_color_manual(values=c(1, 2), guide = guide_legend(title = "Current trial")) +
   theme_bw() +
   theme(plot.title = element_text(hjust = 0.5, size = 20),
         axis.title = element_text(size=20),
@@ -222,10 +225,14 @@ ggplot(dat.use, aes(ExpTrial, RTdrop, alpha = TrialCondition, color = TrialCondi
   scale_linetype_manual(values=c("longdash", "solid", "longdash", "solid")) +
   theme_bw() +
   coord_cartesian(ylim=c(325, 500)) +
-#  ggtitle("Plotted with estimates from MLM") +
-  theme(plot.title = element_text(hjust = 0.5))
+#  ggtitle("Plotted with estimates from MLM") +  
+  theme(plot.title = element_text(hjust = 0.5, size = 20),
+        axis.title = element_text(size=20),
+        axis.text.x = element_text(size=16),
+        axis.text.y = element_text(size=16))
 
-ggsave("./Figures/Figure1.tiff")
+
+ggsave("./Figures/Figure1.tiff", width = 7, height = 5)
 ```
 
 ##### Simple slopes
@@ -332,13 +339,26 @@ fin = rename(fin, Estimate = est, SE = ses)
 
 # for plotting
 limits <- aes(ymax = Estimate + SE, ymin=Estimate - SE)
-ggplot(fin, aes(x = Previous, y = Estimate, group = Current, color = Current)) +
+
+condColors = c("forestgreen", "Black")
+condLinetype = c("dashed", "solid")
+
+ggplot(fin, aes(x = Previous, y = Estimate, group = Current, color = Current, linetype = Current)) +
   geom_line() +
   geom_point(size = 4) +
-  geom_errorbar(limits, width=0.2) +
-  scale_color_manual(values=c("purple", "forestgreen")) +
-  ylab("RT amplitude") +
-  coord_cartesian(ylim = c(350, 475))
+  geom_errorbar(limits, width=0.2, linetype="solid") +
+  ylab("Reaction Time (ms)") +
+  xlab("Previous Trial") +
+  coord_cartesian(ylim = c(350, 475)) +
+  scale_color_manual(values=condColors, guide = guide_legend(title = "Current trial")) +
+  scale_linetype_manual(values=condLinetype, guide = F) +
+  theme_bw() +
+  ggtitle("Beginning") +
+  theme(plot.title = element_text(hjust = 0.5, size = 20),
+        axis.title = element_text(size=20),
+        axis.text.x = element_text(size=16),
+        axis.text.y = element_text(size=16))
+
   
 ```
 
@@ -390,13 +410,22 @@ fin = rename(fin, Estimate = est, SE = ses)
 
 # for plot
 limits <- aes(ymax = Estimate + SE, ymin=Estimate - SE)
-ggplot(fin, aes(x = Previous, y = Estimate, group = Current, color = Current)) +
+ggplot(fin, aes(x = Previous, y = Estimate, group = Current, color = Current, linetype = Current)) +
   geom_line() +
   geom_point(size = 4) +
-  geom_errorbar(limits, width=0.2) +
-  scale_color_manual(values=c("purple", "forestgreen")) +
-  ylab("RT amplitude") +
-  coord_cartesian(ylim = c(350, 475))
+  geom_errorbar(limits, width=0.2, linetype="solid") +
+  ylab("Reaction Time (ms)") +
+  xlab("Previous Trial") +
+  coord_cartesian(ylim = c(350, 475)) +
+  scale_color_manual(values=condColors, guide = guide_legend(title = "Current trial")) +
+  scale_linetype_manual(values=condLinetype, guide = F) +
+  theme_bw() +
+  ggtitle("Middle") +
+  theme(plot.title = element_text(hjust = 0.5, size = 20),
+        axis.title = element_text(size=20),
+        axis.text.x = element_text(size=16),
+        axis.text.y = element_text(size=16))
+
 ```
 
 #### End of experiment 
@@ -445,11 +474,20 @@ fin = rename(fin, Estimate = est, SE = ses)
 
 # for plot
 limits <- aes(ymax = Estimate + SE, ymin=Estimate - SE)
-ggplot(fin, aes(x = Previous, y = Estimate, group = Current, color = Current)) +
+ggplot(fin, aes(x = Previous, y = Estimate, group = Current, color = Current, linetype = Current)) +
   geom_line() +
   geom_point(size = 4) +
-  geom_errorbar(limits, width=0.2) +
-  scale_color_manual(values=c("purple", "forestgreen")) +
-  ylab("RT") +
-  coord_cartesian(ylim = c(350, 475))
+  geom_errorbar(limits, width=0.2, linetype="solid") +
+  ylab("Reaction Time (ms)") +
+  xlab("Previous Trial") +
+  coord_cartesian(ylim = c(350, 475)) +
+  scale_color_manual(values=condColors, guide = guide_legend(title = "Current trial")) +
+  scale_linetype_manual(values=condLinetype, guide = F) +
+  theme_bw() +
+  ggtitle("End") +
+  theme(plot.title = element_text(hjust = 0.5, size = 20),
+        axis.title = element_text(size=20),
+        axis.text.x = element_text(size=16),
+        axis.text.y = element_text(size=16))
+
 ```

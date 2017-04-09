@@ -185,20 +185,20 @@ forPlotting$TrialCondition = c("Previous compatible - Current compatible",
 ggplot(SlowWave.correct[!(is.na(SlowWave.correct$TrialCondition)),], aes(Trial, MeanCurr, alpha = TrialCondition, color = TrialCondition, shape = TrialCondition)) +
   geom_point() +
   geom_abline(data = forPlotting, aes(intercept=Intercept, slope=Slope, color = TrialCondition, linetype = TrialCondition), size=1)+
-  labs(x = "Trial", y = "Amplitude (uV)") +
+  labs(x = "Trial", y = "FSW Amplitude (uV)") +
   scale_shape_manual(values=c(1,19,1,19)) +
   scale_alpha_manual(values=c(.06,.06,.06,.06)) +
   scale_color_manual(values=c("blue", "blue", "red", "red")) +
   scale_linetype_manual(values=c("longdash", "solid", "longdash", "solid")) +
   theme_bw() +
   coord_cartesian(ylim=c(-5.5, 2)) +
-#  ggtitle("Plotted with estimates from MLM") +
-  theme(plot.title = element_text(hjust = 0.5),
-        axis.title = element_text(size=18),
-        axis.text.x = element_text(size=14),
-        axis.text.y = element_text(size=14))
+#  ggtitle("Plotted with estimates from MLM") + 
+  theme(plot.title = element_text(hjust = 0.5, size = 20),
+        axis.title = element_text(size=20),
+        axis.text.x = element_text(size=16),
+        axis.text.y = element_text(size=16))
 
-ggsave("./Figures/Figure3.tiff")
+ggsave("./Figures/Figure3.tiff", width = 7, height = 5)
 
 ```
   
@@ -313,13 +313,26 @@ fin = rename(fin, Estimate = est, SE = ses)
 
 # for plotting
 limits <- aes(ymax = Estimate + SE, ymin=Estimate - SE)
-ggplot(fin, aes(x = Previous, y = Estimate, group = Current, color = Current)) +
+
+condColors = c("forestgreen", "Black")
+condLinetype = c("dashed", "solid")
+
+ggplot(fin, aes(x = Previous, y = Estimate, group = Current, color = Current, linetype = Current)) +
   geom_line() +
   geom_point(size = 4) +
-  geom_errorbar(limits, width=0.2) +
-  scale_color_manual(values=c("purple", "forestgreen")) +
-  ylab("Slowwave amplitude") +
-  coord_cartesian(ylim = c(-4.2, -.2))
+  geom_errorbar(limits, width=0.2, linetype="solid") +
+  ylab("FSW amplitude (uV)") +
+  coord_cartesian(ylim = c(-4.2, -.2)) +
+  scale_color_manual(values=condColors, guide = guide_legend(title = "Current trial")) +
+  scale_linetype_manual(values=condLinetype, guide = F) +
+  xlab("Previous Trial") +
+  theme_bw() +
+  ggtitle("Beginning") +
+  theme(plot.title = element_text(hjust = 0.5, size = 20),
+        axis.title = element_text(size=20),
+        axis.text.x = element_text(size=16),
+        axis.text.y = element_text(size=16))
+
   
 ```
 
@@ -374,13 +387,22 @@ fin = rename(fin, Estimate = est, SE = ses)
 
 # for plot
 limits <- aes(ymax = Estimate + SE, ymin=Estimate - SE)
-ggplot(fin, aes(x = Previous, y = Estimate, group = Current, color = Current)) +
+ggplot(fin, aes(x = Previous, y = Estimate, group = Current, color = Current, linetype = Current)) +
   geom_line() +
   geom_point(size = 4) +
-  geom_errorbar(limits, width=0.2) +
-  scale_color_manual(values=c("purple", "forestgreen")) +
-  ylab("Slowwave amplitude") +
-  coord_cartesian(ylim = c(-4.2, -.2))
+  geom_errorbar(limits, width=0.2, linetype="solid") +
+  ylab("FSW amplitude (uV)") +
+  coord_cartesian(ylim = c(-4.2, -.2)) +
+  scale_color_manual(values=condColors, guide = guide_legend(title = "Current trial")) +
+  scale_linetype_manual(values=condLinetype, guide = F) +
+  xlab("Previous Trial") +
+  theme_bw() +
+  ggtitle("Middle") +
+  theme(plot.title = element_text(hjust = 0.5, size = 20),
+        axis.title = element_text(size=20),
+        axis.text.x = element_text(size=16),
+        axis.text.y = element_text(size=16))
+
 ```
 
 
@@ -434,12 +456,21 @@ fin = rename(fin, Estimate = est, SE = ses)
 
 # for plotting
 limits <- aes(ymax = Estimate + SE, ymin=Estimate - SE)
-ggplot(fin, aes(x = Previous, y = Estimate, group = Current, color = Current)) +
+ggplot(fin, aes(x = Previous, y = Estimate, group = Current, color = Current, linetype = Current)) +
   geom_line() +
   geom_point(size = 4) +
-  geom_errorbar(limits, width=0.2) +
-  scale_color_manual(values=c("purple", "forestgreen")) +
-  ylab("Slowwave amplitude") +
-  coord_cartesian(ylim = c(-4.2, -.2))
+  geom_errorbar(limits, width=0.2, linetype="solid") +
+  ylab("FSW amplitude (uV)") +
+  coord_cartesian(ylim = c(-4.2, -.2)) +
+  scale_color_manual(values=condColors, guide = guide_legend(title = "Current trial")) +
+  scale_linetype_manual(values=condLinetype, guide = F) +
+  xlab("Previous Trial") +
+  theme_bw() +
+  ggtitle("End") +
+  theme(plot.title = element_text(hjust = 0.5, size = 20),
+        axis.title = element_text(size=20),
+        axis.text.x = element_text(size=16),
+        axis.text.y = element_text(size=16))
+
 ```
 
