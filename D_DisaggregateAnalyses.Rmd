@@ -1,6 +1,6 @@
 ---
 title: Disaggregate analyses
-author: Curt, 3/08/2017, Hannah, 4/7/2017
+author: Hannah, 6/19/2017
 output:
   html_document:
     highlight: pygments
@@ -14,8 +14,9 @@ require(dplyr)
 require(lme4)
 require(lmerTest)
 require(ggplot2)
+require(knitr)
 #setwd("C:/Users/Curt/Box Sync/Bruce Projects/Sequential Processing/PointByPoint Processing/Created by R_ArtRej")
-MeanCent_dat = read.delim("N2prev_FSWprev_MeanCent_EventFixed_AddN2curr.txt")
+MeanCent_dat = read.delim("RT_N1_N2_FSW_FSWPrev_MeanCent.txt")
 MeanCent_dat$RT[MeanCent_dat$RT == -7] = NA
 
 MeanCent_dat$Trial.scaled = (MeanCent_dat$Trial-1)/100
@@ -40,7 +41,7 @@ SlowWaveCent indicates the within-subject effect.
 
 ### 1. SW on one trial predicting N2 on the following trial
 ```{r data1}
-Dis_N2_Out = lmer(N2curr ~ SlowWaveMean + SlowWaveCent +
+Dis_N2_Out = lmer(N2Curr ~ SWPrevMean + SWPrevCent +
                     (1|Subject), data = MeanCent_dat)
 ```
 
@@ -52,14 +53,14 @@ summary(Dis_N2_Out)$varcor
 **Fixed effects:**
 ``` {r grand1fixed, echo = FALSE} 
 est = as.data.frame(round(summary(Dis_N2_Out)$coefficients, digits = 3))
-est
+kable(est)
 ```
 
 
 
 #### A. SW on one trial predicting N2 on the following trial, including trial as a predictor
 ```{r Adata1}
-Dis_N2_Out = lmer(N2curr ~ SlowWaveMean + SlowWaveCent*Trial.scaled +
+Dis_N2_Out = lmer(N2Curr ~ SWPrevMean + SWPrevCent*Trial.scaled +
                     (1|Subject), data = MeanCent_dat)
 ```
 
@@ -71,7 +72,7 @@ summary(Dis_N2_Out)$varcor
 **Fixed effects:**
 ``` {r Agrand1fixed, echo = FALSE} 
 est = as.data.frame(round(summary(Dis_N2_Out)$coefficients, digits = 3))
-est
+kable(est)
 ```
 
 #### A2. SW on one trial predicting N2 on the following trial, within particular conditions
@@ -90,32 +91,32 @@ MeanCent_dat$Previous[MeanCent_dat$Cell == "Previous compatible - Current incomp
 
 **PI-CI**  
 ``` {r PICI, echo = FALSE}
-PICI = lmer(N2curr ~ SlowWaveMean + SlowWaveCent +
+PICI = lmer(N2Curr ~ SWPrevMean + SWPrevCent +
                     (1|Subject), data = filter(MeanCent_dat, Cell == "Previous incompatible - Current incompatible"))
 
-summary(PICI)
+kable(round(summary(PICI)$coefficients, digits = 3))
 ```
 
 **PC-CI**  
 ``` {r PCCI, echo = FALSE}
-PCCI = lmer(N2curr ~ SlowWaveMean + SlowWaveCent +
+PCCI = lmer(N2Curr ~ SWPrevMean + SWPrevCent +
                     (1|Subject), data = filter(MeanCent_dat, Cell == "Previous compatible - Current incompatible"))
 
-summary(PCCI)
+kable(round(summary(PCCI)$coefficients, digits = 3))
 ```
 
 **Test previous when current is incompatible**  
 ``` {r testPrev, echo = FALSE}
-testPrev = lmer(N2curr ~ SlowWaveMean + SlowWaveCent*Previous +
+testPrev = lmer(N2Curr ~ SWPrevMean + SWPrevCent +
                     (1|Subject), data = filter(MeanCent_dat, Current == "Incompatible"))
 
-summary(testPrev)
+kable(round(summary(testPrev)$coefficients, digits = 3))
 ```
 
 
 ### 2. SlowWave on one trial predicting RT on the following trial
 ```{r data2}
-Dis_RT_Out = lmer(RT ~ SlowWaveMean + SlowWaveCent + 
+Dis_RT_Out = lmer(RT ~ SWPrevMean + SWPrevCent + 
                     (1|Subject), data = MeanCent_dat)
 ```
   
@@ -127,14 +128,14 @@ summary(Dis_RT_Out)$varcor
 **Fixed effects:**
 ``` {r grand2fixed, echo = FALSE} 
 est = as.data.frame(round(summary(Dis_RT_Out)$coefficients, digits = 3))
-est
+kable(est)
 ```
 
 
 
 #### B. SW on one trial predicting RT on the following trial, including trial as a predictor
 ```{r Bdata1}
-Dis_N2_Out = lmer(RT ~ SlowWaveMean + SlowWaveCent*Trial.scaled +
+Dis_N2_Out = lmer(RT ~ SWPrevMean + SWPrevCent*Trial.scaled +
                     (1|Subject), data = MeanCent_dat)
 ```
 
@@ -146,146 +147,26 @@ summary(Dis_N2_Out)$varcor
 **Beginning of experiment:**
 ``` {r Bgrand1fixed, echo = FALSE} 
 est1 = as.data.frame(round(summary(Dis_N2_Out)$coefficients, digits = 3))
-est1
+kable(est1)
 ```
 
-```{r Bdata2, echo=F}
-# fit two more models to test interaction at middle and end of experiment
-
-MeanCent_dat$Trial.mid = MeanCent_dat$Trial.scaled - 4
-MeanCent_dat$Trial.end = MeanCent_dat$Trial.scaled - 8
-
-Dis_N2_Out.mid = lmer(RT ~ SlowWaveMean + SlowWaveCent*Trial.mid +
-                    (1|Subject), data = MeanCent_dat)
-Dis_N2_Out.end = lmer(RT ~ SlowWaveMean + SlowWaveCent*Trial.end +
-                    (1|Subject), data = MeanCent_dat)
-
-```
-
-
-  
-**Middle of experiment:**
-``` {r Bgrand1fixed2, echo = FALSE} 
-est2 = as.data.frame(round(summary(Dis_N2_Out.mid)$coefficients, digits = 3))
-est2
-```
-
-**End of experiment:**
-``` {r Bgrand1fixed3, echo = FALSE} 
-est3 = as.data.frame(round(summary(Dis_N2_Out.end)$coefficients, digits = 3))
-est3
-```
-
-
-```{r plotinteraction, echo=FALSE, warning = FALSE}
-
-forplotting = data.frame(intercept = est1[1,1], slope = est1[3,1], line = "beginning") %>% 
-  rbind(data.frame(intercept = est2[1,1], slope = est2[3,1], line = "middle")) %>% 
-  rbind(data.frame(intercept = est3[1,1], slope = est3[3,1], line = "end"))
-
-
-ggplot(MeanCent_dat, aes(x=SlowWaveCent, y=RT)) +
-  geom_abline(data = forplotting, aes(intercept = forplotting[2,1], slope=forplotting[1,2], color = "Beginning"), size=1) +
-  geom_abline(data = forplotting, aes(intercept = forplotting[2,1], slope=forplotting[2,2],color = "Middle"), size=1) +
-  geom_abline(data = forplotting, aes(intercept = forplotting[2,1], slope=forplotting[3,2], color = "End"), size=1) + 
-  theme_bw() +
-  scale_colour_manual("", 
-                      values = c("Beginning"="lightblue", "Middle"="blue", 
-                                 "End"="darkblue")) +
-#  geom_hline(yintercept=0) +
-  geom_vline(xintercept=0) +
-  labs(x = "FSW on Trial N - 1 (uV)", y = "RT on Trial N (ms)") +
-  ylim(421, 423) +
-#  ggtitle("Probing the interaction") +
-  theme(plot.title = element_text(hjust = 0.5, size = 20),
-        axis.title = element_text(size=18),
-        axis.text.x = element_text(size=14),
-        axis.text.y = element_text(size=14),
-        legend.text = element_text(size=14))
-
-ggsave("./Figures/Figure5.tiff", width= 8, height= 7)
-
-```
-
-
-### 3. N2 on one trial predicting N2 on the following trial
-
-```{r data3}
-Dis_N2_Out = lmer(N2curr ~ N2prevMean + N2prevCent + 
-                    (1|Subject), data = MeanCent_dat)
-```
-  
-**Random effects:**  
-``` {r grand3random, echo = FALSE}
-summary(Dis_N2_Out)$varcor
-```
-
-**Fixed effects:**
-``` {r grand3fixed, echo = FALSE} 
-est = as.data.frame(round(summary(Dis_N2_Out)$coefficients, digits = 3))
-est
-```
-
-
-#### C. N2 on one trial predicting N2 on the following trial, including trial as a predictor
-```{r Cdata1}
-Dis_N2_Out2 = lmer(N2curr ~ N2prevMean + N2prevCent*Trial.scaled + 
-                    (1|Subject), data = MeanCent_dat)
-```
-
-**Random effects:**  
-``` {r Cgrand1random, echo = FALSE}
-summary(Dis_N2_Out2)$varcor
-```
-
-**Fixed effects:**
-``` {r Cgrand1fixed, echo = FALSE} 
-est = as.data.frame(round(summary(Dis_N2_Out2)$coefficients, digits = 3))
-est
-```
-
-
-### 4. SW on one trial predicting SW on the following trial
-
-```{r data4}
-Dis_SW_Out = lmer(SlowWaveCurr ~ SlowWaveMean + SlowWaveCent + 
-                    (1|Subject), data = MeanCent_dat)
-```
-  
-**Random effects:**  
-``` {r grand4random, echo = FALSE}
-summary(Dis_SW_Out)$varcor
-```
-
-**Fixed effects:**
-``` {r grand4fixed, echo = FALSE} 
-est = as.data.frame(round(summary(Dis_SW_Out)$coefficients, digits = 3))
-est
-```
-
-
-#### D. SW on one trial predicting SW on the following trial, including trial as a predictor
-```{r Ddata1}
-Dis_SW_Out2 = lmer(SlowWaveCurr ~ SlowWaveMean + SlowWaveCent*Trial.scaled + 
-                    (1|Subject), data = MeanCent_dat)
-```
-
-**Random effects:**  
-``` {r Dgrand1random, echo = FALSE}
-summary(Dis_SW_Out2)$varcor
-```
-
-**Fixed effects:**
-``` {r Dgrand1fixed, echo = FALSE} 
-est = as.data.frame(round(summary(Dis_SW_Out2)$coefficients, digits = 3))
-est
-```
-
-
-### 5. N2 on one trial predicting FSW on the same trial
+### 3. N2 on one trial predicting FSW on the same trial
 
 ```{r data5}
-Dis_SW_Out = lmer(SlowWavePrev ~ N2prevMean + N2prevCent + 
+# need to add mean centered N2 and N2 sub means
+submeans = select(MeanCent_dat, Subject, N2Curr) %>% 
+  group_by(Subject) %>% 
+  summarise_each(funs(mean(., na.rm=T))) %>% 
+  as.data.frame()
+
+MeanCent_dat$N2CurrMean = NA
+for (i in unique(MeanCent_dat$Subject)) {
+  MeanCent_dat$N2CurrMean[MeanCent_dat$Subject == i] = submeans$N2Curr[submeans$Subject == i]
+}
+
+MeanCent_dat$N2CurrCent = MeanCent_dat$N2Curr - MeanCent_dat$N2CurrMean
+
+Dis_SW_Out = lmer(SlowWaveCurr ~ N2CurrMean + N2CurrCent + 
                     (1|Subject), data = MeanCent_dat)
 ```
   
@@ -297,13 +178,13 @@ summary(Dis_SW_Out)$varcor
 **Fixed effects:**
 ``` {r grand5fixed, echo = FALSE} 
 est = as.data.frame(round(summary(Dis_SW_Out)$coefficients, digits = 3))
-est
+kable(est)
 ```
 
 
 #### E. N2 on one trial predicting FSW on the same trial, including trial as a predictor
 ```{r Ddata5}
-Dis_SW_Out2 = lmer(SlowWavePrev ~ N2prevMean + N2prevCent*Trial.scaled + 
+Dis_SW_Out2 = lmer(SlowWaveCurr ~ N2CurrMean + N2CurrCent*Trial.scaled + 
                     (1|Subject), data = MeanCent_dat)
 ```
 
@@ -315,58 +196,42 @@ summary(Dis_SW_Out2)$varcor
 **Fixed effects:**
 ``` {r Dgrand5fixed, echo = FALSE} 
 est = as.data.frame(round(summary(Dis_SW_Out2)$coefficients, digits = 3))
-est
+kable(est)
 ```
 
-### 6. N2 on one trial predicting RT on the same trial
-
-```{r data6}
-Dis_N2_Out = lmer(RT ~ N2currMean + N2currCent + 
+### 4. SlowWave on one trial predicting N1 on the following trial
+```{r data4}
+Dis_N1_Out = lmer(N1Curr ~ SWPrevMean + SWPrevCent + 
                     (1|Subject), data = MeanCent_dat)
 ```
   
 **Random effects:**  
-``` {r grand6random, echo = FALSE}
-summary(Dis_N2_Out)$varcor
+``` {r grand4random, echo = FALSE}
+summary(Dis_N1_Out)$varcor
 ```
 
 **Fixed effects:**
-``` {r grand6fixed, echo = FALSE} 
-est = as.data.frame(round(summary(Dis_N2_Out)$coefficients, digits = 3))
-est
+``` {r grand4fixed, echo = FALSE} 
+est = as.data.frame(round(summary(Dis_N1_Out)$coefficients, digits = 3))
+kable(est)
 ```
 
 
-#### E. N2 on one trial predicting RT on the same trial, including trial as a predictor
-```{r Ddata6}
-Dis_N2_Out2 = lmer(RT ~ N2currMean + N2currCent*Trial.scaled + 
+
+#### B. SW on one trial predicting N1 on the following trial, including trial as a predictor
+```{r Bdata4}
+Dis_N1_Out = lmer(N1Curr ~ SWPrevMean + SWPrevCent*Trial.scaled +
                     (1|Subject), data = MeanCent_dat)
 ```
 
 **Random effects:**  
-``` {r Dgrand6random, echo = FALSE}
-summary(Dis_N2_Out2)$varcor
+``` {r Bgrand4random, echo = FALSE}
+summary(Dis_N1_Out)$varcor
 ```
 
-**Fixed effects:**
-``` {r Dgrand6fixed, echo = FALSE} 
-est = as.data.frame(round(summary(Dis_N2_Out2)$coefficients, digits = 3))
-est
+**Beginning of experiment:**
+``` {r Bgrand4fixed, echo = FALSE} 
+est1 = as.data.frame(round(summary(Dis_N1_Out)$coefficients, digits = 3))
+kable(est1)
 ```
 
-#### E2. N2 on one trial predicting RT on the same trial, just for iI trials
-```{r Ddata7}
-Dis_N2_Out2 = lmer(RT ~ N2currMean + N2currCent + 
-                    (1|Subject), data = filter(MeanCent_dat, Cell == "Previous incompatible - Current incompatible"))
-```
-
-**Random effects:**  
-``` {r Dgrand7random, echo = FALSE}
-summary(Dis_N2_Out2)$varcor
-```
-
-**Fixed effects:**
-``` {r Dgrand7fixed, echo = FALSE} 
-est = as.data.frame(round(summary(Dis_N2_Out2)$coefficients, digits = 3))
-est
-```
