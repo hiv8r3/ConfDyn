@@ -9,7 +9,7 @@ output:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = FALSE)
 require(dplyr)
 require(lme4)
 require(lmerTest)
@@ -84,14 +84,30 @@ MeanCent_dat$Current[MeanCent_dat$Cell == "Previous incompatible - Current incom
 MeanCent_dat$Current[MeanCent_dat$Cell == "Previous compatible - Current compatible"] = "Compatible"
 MeanCent_dat$Current[MeanCent_dat$Cell == "Previous compatible - Current incompatible"] = "Incompatible"
 
-MeanCent_dat$Previous[MeanCent_dat$Cell == "Previous incompatible - Current compatible"] = "Inompatible"
+MeanCent_dat$Previous[MeanCent_dat$Cell == "Previous incompatible - Current compatible"] = "Incompatible"
 MeanCent_dat$Previous[MeanCent_dat$Cell == "Previous incompatible - Current incompatible"] = "Incompatible"
 MeanCent_dat$Previous[MeanCent_dat$Cell == "Previous compatible - Current compatible"] = "Compatible"
 MeanCent_dat$Previous[MeanCent_dat$Cell == "Previous compatible - Current incompatible"] = "Compatible"
 
 ```
 
-**PI-CI**  
+Including Current and Previous as predictors:  
+**Random effects:**  
+``` {r }
+m1 = lmer(N2Curr ~ SWPrevMean + SWPrevCent*CondCurr*CondPrev +
+                    (1|Subject), data = MeanCent_dat)
+
+summary(m1)$varcor
+```
+
+**Fixed effects:**
+``` {r } 
+est = as.data.frame(round(summary(m1)$coefficients, digits = 3))
+kable(est)
+```
+
+Same thing, but separately for each type of trial:  
+**iI**  
 ``` {r PICI, echo = FALSE}
 PICI = lmer(N2Curr ~ SWPrevMean + SWPrevCent +
                     (1|Subject), data = filter(MeanCent_dat, Cell == "Previous incompatible - Current incompatible"))
@@ -99,7 +115,7 @@ PICI = lmer(N2Curr ~ SWPrevMean + SWPrevCent +
 kable(round(summary(PICI)$coefficients, digits = 3))
 ```
 
-**PC-CI**  
+**cI**  
 ``` {r PCCI, echo = FALSE}
 PCCI = lmer(N2Curr ~ SWPrevMean + SWPrevCent +
                     (1|Subject), data = filter(MeanCent_dat, Cell == "Previous compatible - Current incompatible"))
@@ -107,12 +123,20 @@ PCCI = lmer(N2Curr ~ SWPrevMean + SWPrevCent +
 kable(round(summary(PCCI)$coefficients, digits = 3))
 ```
 
-**Test previous when current is incompatible**  
-``` {r testPrev, echo = FALSE}
-testPrev = lmer(N2Curr ~ SWPrevMean + SWPrevCent +
-                    (1|Subject), data = filter(MeanCent_dat, Current == "Incompatible"))
+**iC**  
+``` {r iC, echo = FALSE}
+iC = lmer(N2Curr ~ SWPrevMean + SWPrevCent +
+                    (1|Subject), data = filter(MeanCent_dat, Cell == "Previous incompatible - Current compatible"))
 
-kable(round(summary(testPrev)$coefficients, digits = 3))
+kable(round(summary(iC)$coefficients, digits = 3))
+```
+
+**cC**  
+``` {r cC, echo = FALSE}
+cC = lmer(N2Curr ~ SWPrevMean + SWPrevCent +
+                    (1|Subject), data = filter(MeanCent_dat, Cell == "Previous compatible - Current compatible"))
+
+kable(round(summary(cC)$coefficients, digits = 3))
 ```
 
 
