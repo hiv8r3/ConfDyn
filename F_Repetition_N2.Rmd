@@ -1,6 +1,6 @@
 ---
 title: Repetition analyses (N2)
-author: Hannah, 6/19/2017
+author: Hannah, 6/30/2017
 output:
   html_document:
     highlight: pygments
@@ -10,8 +10,8 @@ output:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
-knitr::opts_chunk$set(warning = FALSE)
 knitr::opts_chunk$set(out.width = '50%')
+knitr::opts_chunk$set(warning = FALSE)
 options(width=140)
 require(dplyr)
 require(ggplot2)
@@ -19,6 +19,8 @@ require(lme4)
 require(lmerTest)
 require(knitr)
 ```
+**Major changes: Fixed FlankerRep and TargetRep to include duplications (e.g., 130 followed by 130). Added model with TargetRep included as covariate.**
+
 
 ### 1. N2
 “Current” trial will be included if:  
@@ -47,11 +49,15 @@ Incomp: Target Right, Flanker Left = 170.
 
 CompleteRep (24.3%) = repetition of same trial (e.g., excludes 110 following 110)    
 AnyRep (74.8%) = either target or flanker is repeated (only includes 110/130 pair, 150/170 pair)  
-TargetRep (25.3%) = target is repeated (excludes 150/110 pair, 170/130 pair)  
-FlankerRep (25.2%) = flanker is repeated (excludes 150/130 pair, 170/110 pair)  
+TargetRep (~50%) = target is repeated (excludes 150/110 pair, 170/130 pair)  
+FlankerRep (~50%) = flanker is repeated (excludes 150/130 pair, 170/110 pair)  
 
 ```{r}
 N2.correct = read.delim("./N2_AllSubs_TBT_Cond_Prev_Rep.txt") # made by Curt. Same number of trials as "AllSubs_TBTaverages_N2_Correct_withPrevious_EventFixed.txt", which was used in submission 1 analyses
+
+# Fix TargetRep and FlankerRep columns to flag duplications
+N2.correct$TargetRep[N2.correct$prevCondTrigger == N2.correct$currCondTrigger] = 1
+N2.correct$FlankerRep[N2.correct$prevCondTrigger == N2.correct$currCondTrigger] = 1
 
 # add effect codes for categorical variables
 N2.correct$Previous = NA
@@ -457,7 +463,7 @@ ggplot(N2.correct[!(is.na(N2.correct$TrialCondition)),], aes(Trial, MeanCurr, al
 
 Trial is scaled to range from 0 to 8 (instead of 1 to 800) so that the betas associated with trial are a little bigger (but significance testing is unaffected by linear scaling, so the test statistics and p values will be the same as if we used the unscaled Trial variable).
 
-``` {r simpleN2, echo = FALSE}
+``` {r}
 
 fm2 <- lmer(MeanCurr ~ Condition*prevCond*Trial.begin + # need to use dummy coded variables, not effect coded
        (Condition*prevCond|Subject) + (1|Electrode:Subject), data = filter(N2.correct, CompleteRep == 0))
@@ -689,3 +695,119 @@ ggplot(fin, aes(x = Previous, y = Estimate, group = Current, color = Current, li
 
 ```
 
+#### C. TargetRep trials retained, included as covariate
+
+##### Plot over whole task, separately for TargetRep and non-TargetRep  
+**Slopes and estimates of lines are from the MLM, not fitted with OLS.** 
+
+``` {r}
+
+# find slopes and intercepts with dummy coded model, trial (unscaled) is included
+plot1.d <- lmer(MeanCurr ~ Condition*prevCond*Trial*TargetRep + (1|Subject) + (1|Electrode:Subject), data = N2.correct)
+
+parms <- fixef(plot1.d) # fixed parameters from model
+vcmat <- vcov(plot1.d) # variance/covariance matrix of fixed effects
+
+# First calculate slopes
+
+## each row of this matrix defines entries of parms that we want to combine:
+STmat <- matrix(NA,8,16)
+STmat[1,] <- c(0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0) # slope for cC, TargetRep = 0
+STmat[2,] <- c(0,0,0,1,0,0,0,1,0,0,0,0,0,0,0,0) # slope for iC, TargetRep = 0
+STmat[3,] <- c(0,0,0,1,0,0,1,0,0,0,0,0,0,0,0,0) # slope for cI, TargetRep = 0
+STmat[4,] <- c(0,0,0,1,0,0,1,1,0,0,0,1,0,0,0,0) # slope for iI, TargetRep = 0
+
+STmat[5,] <- c(0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0) # slope for cC, TargetRep = 1
+STmat[6,] <- c(0,0,0,1,0,0,0,1,0,0,1,0,0,0,1,0) # slope for iC, TargetRep = 1
+STmat[7,] <- c(0,0,0,1,0,0,1,0,0,0,1,0,0,1,0,0) # slope for cI, TargetRep = 1
+STmat[8,] <- c(0,0,0,1,0,0,1,1,0,0,1,1,0,1,1,1) # slope for iI, TargetRep = 1
+
+Sparest <- STmat %*% parms          # see above for notation
+Snewvc <- STmat %*% vcmat %*% t(STmat)
+Sses <- sqrt(diag(Snewvc)) 
+
+slopes = cbind(Sparest, Sses) %>% as.data.frame()
+names(slopes) = c("Slope", "Slope_SE")
+
+# Next calculate intercepts
+
+## each row of this matrix defines entries of parms that we want to combine:
+ITmat <- matrix(NA,8,16)
+ITmat[1,] <- c(1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0) # intercept for cC, TargetRep = 0
+ITmat[2,] <- c(1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0) # intercept for iC, TargetRep = 0
+ITmat[3,] <- c(1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0) # intercept for cI, TargetRep = 0
+ITmat[4,] <- c(1,1,1,0,0,1,0,0,0,0,0,0,0,0,0,0) # intercept for iI, TargetRep = 0
+
+ITmat[5,] <- c(1,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0) # intercept for cC, TargetRep = 1
+ITmat[6,] <- c(1,0,1,0,1,0,0,0,0,1,0,0,0,0,0,0) # intercept for iC, TargetRep = 1
+ITmat[7,] <- c(1,1,0,0,1,0,0,0,1,0,0,0,0,0,0,0) # intercept for cI, TargetRep = 1
+ITmat[8,] <- c(1,1,1,0,1,1,0,0,1,1,0,0,1,0,0,0) # intercept for iI, TargetRep = 1
+
+Iparest <- ITmat %*% parms          # see above for notation
+Inewvc <- ITmat %*% vcmat %*% t(ITmat)
+Ises <- sqrt(diag(Inewvc)) 
+
+## final results
+intercepts = cbind(Iparest, Ises) %>% as.data.frame()
+names(intercepts) = c("Intercept", "Intercept_SE")
+
+forPlotting = cbind(slopes, intercepts)
+
+# label for understanding
+forPlotting$TrialCondition = rep(c("cC", "iC", "cI", "iI"),2)
+forPlotting$TrialCondition = factor(forPlotting$TrialCondition)
+forPlotting$TargetRep = rep(c(0, 1), each=4)
+forPlotting$TargetRep = factor(forPlotting$TargetRep)
+
+
+# BINGO -------------------------------------------------------------------
+ggplot(filter(N2.correct, TargetRep == 0), aes(Trial, MeanCurr)) +
+  geom_point(alpha=0) +
+  geom_abline(data = forPlotting[1:4,], aes(intercept=Intercept, slope=Slope, color = TrialCondition, linetype = TrialCondition), size=1)+
+  labs(x = "Trial", y = "N2 amplitude (uV)") +
+  theme_bw() +
+  ggtitle("No TargetRep (TargetRep = 0)") +
+  coord_cartesian(ylim=c(-2.5, 5)) +
+  theme(plot.title = element_text(hjust = 0.5))
+
+ggplot(filter(N2.correct, TargetRep == 1), aes(Trial, MeanCurr)) +
+  geom_point(alpha=0) +
+  geom_abline(data = forPlotting[5:8,], aes(intercept=Intercept, slope=Slope, color = TrialCondition, linetype = TrialCondition), size=1)+
+  labs(x = "Trial", y = "N2 amplitude (uV)") +
+  theme_bw() +
+  ggtitle("TargetRep (TargetRep = 1)") +
+  coord_cartesian(ylim=c(-2.5, 5)) +
+  theme(plot.title = element_text(hjust = 0.5))
+
+```
+
+##### Beginning of the task
+Current and Previous are effect coded, trial ranges from 0 to 8.
+``` {r}
+begin.e = lmer(MeanCurr ~ Current*Previous*Trial.begin*TargetRep + (1|Subject), data = N2.correct)
+
+kable(round(summary(begin.e)$coefficients[c(1:3,6),1:5], digits = 3))
+# interactions with trial
+kable(round(summary(begin.e)$coefficients[c(4, 7:8, 12, 11, 14:16),1:5], digits = 3))
+# interactions with target
+kable(round(summary(begin.e)$coefficients[c(5, 9:10, 13),1:5], digits = 3))
+
+```
+
+##### Middle of the task
+Current and Previous are effect coded, trial ranges from -4 to 4.
+``` {r}
+middle.e = lmer(MeanCurr ~ Current*Previous*Trial.middle*TargetRep + (1|Subject), data = N2.correct)
+
+kable(round(summary(middle.e)$coefficients[c(1:3,6),1:5], digits = 3))
+kable(round(summary(middle.e)$coefficients[c(5, 9:10, 13),1:5], digits = 3))
+```
+
+##### End of the task
+Current and Previous are effect coded, trial ranges from -8 to 0.
+``` {r}
+end.e = lmer(MeanCurr ~ Current*Previous*Trial.end*TargetRep + (1|Subject), data = N2.correct)
+
+kable(round(summary(end.e)$coefficients[c(1:3,6),1:5], digits = 3))
+kable(round(summary(end.e)$coefficients[c(5, 9:10, 13),1:5], digits = 3))
+```

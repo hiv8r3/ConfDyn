@@ -1,6 +1,6 @@
 ---
 title: Repetition analyses (FSW)
-author: Hannah, 6/21/2017
+author: Hannah, 6/30/2017
 output:
   html_document:
     highlight: pygments
@@ -11,6 +11,7 @@ output:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
 knitr::opts_chunk$set(out.width = '50%')
+knitr::opts_chunk$set(warning = FALSE)
 options(width=140)
 require(dplyr)
 require(ggplot2)
@@ -18,6 +19,8 @@ require(lme4)
 require(lmerTest)
 require(knitr)
 ```
+**Major changes: Fixed FlankerRep and TargetRep to include duplications (e.g., 130 followed by 130). Added model with TargetRep included as covariate.**
+
 
 ### 1. FSW
 “Current” trial will be included if:  
@@ -46,11 +49,15 @@ Incomp: Target Right, Flanker Left = 170.
 
 CompleteRep (24.3%) = repetition of same trial (e.g., excludes 110 following 110)    
 AnyRep (74.8%) = either target or flanker is repeated (only includes 110/130 pair, 150/170 pair)  
-TargetRep (25.3%) = target is repeated (excludes 150/110 pair, 170/130 pair)  
-FlankerRep (25.2%) = flanker is repeated (excludes 150/130 pair, 170/110 pair)  
+TargetRep (~50%) = target is repeated (excludes 150/110 pair, 170/130 pair)  
+FlankerRep (~50%) = flanker is repeated (excludes 150/130 pair, 170/110 pair)  
 
-```{r RTdata, echo = FALSE}
+```{r}
 SlowWave.correct = read.delim("FSW_AllSubs_TBT_Cond_Prev_Rep.txt")
+
+# Fix TargetRep and FlankerRep columns to flag duplications
+SlowWave.correct$TargetRep[SlowWave.correct$prevCondTrigger == SlowWave.correct$currCondTrigger] = 1
+SlowWave.correct$FlankerRep[SlowWave.correct$prevCondTrigger == SlowWave.correct$currCondTrigger] = 1
 
 # make effect coding variables
 SlowWave.correct$Current.e = NA
@@ -135,7 +142,7 @@ ggplot(filter(SlowWave.correct, TargetRep == 0), aes(Trial, MeanCurr, alpha = Tr
   scale_color_manual(values=c("blue", "blue", "red", "red")) +
   scale_linetype_manual(values=c("longdash", "solid", "longdash", "solid")) +
   theme_bw() +
-  coord_cartesian(ylim=c(325, 500))
+  coord_cartesian(ylim=c(-5.5, 2))
 #  ggtitle("Plotted with estimates from MLM") +  
   # theme(plot.title = element_text(hjust = 0.5, size = 20),
   #       axis.title = element_text(size=20),
@@ -245,7 +252,7 @@ ggplot(fin, aes(x = Previous, y = Estimate, group = Current, color = Current, li
   geom_errorbar(limits, width=0.2, linetype="solid") +
   ylab("FSW amplitude (uV)") +
   xlab("Previous Trial") +
-  coord_cartesian(ylim = c(350, 475)) +
+  coord_cartesian(ylim = c(-4.2, -.2)) +
   scale_color_manual(values=c("black", "red"), guide = guide_legend(title = "Current trial")) +
   scale_linetype_manual(values=c("solid", "dashed"), guide = F) +
   theme_bw() +
@@ -307,7 +314,7 @@ ggplot(fin, aes(x = Previous, y = Estimate, group = Current, color = Current, li
   geom_errorbar(limits, width=0.2, linetype="solid") +
   ylab("FSW amplitude (uV)") +
   xlab("Previous Trial") +
-  coord_cartesian(ylim = c(350, 475)) +
+  coord_cartesian(ylim = c(-4.2, -.2)) +
   scale_color_manual(values=c("black", "red"), guide = guide_legend(title = "Current trial")) +
   scale_linetype_manual(values=c("solid", "dashed"), guide = F) +
   theme_bw() +
@@ -369,7 +376,7 @@ ggplot(fin, aes(x = Previous, y = Estimate, group = Current, color = Current, li
   geom_errorbar(limits, width=0.2, linetype="solid") +
   ylab("FSW amplitude (uV)") +
   xlab("Previous Trial") +
-  coord_cartesian(ylim = c(350, 475)) +
+  coord_cartesian(ylim = c(-4.2, -.2)) +
   scale_color_manual(values=c("black", "red"), guide = guide_legend(title = "Current trial")) +
   scale_linetype_manual(values=c("solid", "dashed"), guide = F) +
   theme_bw() +
@@ -389,7 +396,7 @@ ggplot(fin, aes(x = Previous, y = Estimate, group = Current, color = Current, li
 ``` {r trialLevel2, echo = FALSE, warning = FALSE}
 
 # find slopes and intercepts with dummy coded model, trial (unscaled) is included
-plot1.d <- lmer(MeanCurr ~ TrialType*prevTrialType*Trial + (TrialType+prevTrialType|Subject), data = filter(SlowWave.correct, CompleteRep == 0))
+plot1.d <- lmer(MeanCurr ~ Condition*prevCond*Trial + (Condition+prevCond|Subject), data = filter(SlowWave.correct, CompleteRep == 0))
 
 parms <- fixef(plot1.d) # fixed parameters from model
 vcmat <- vcov(plot1.d) # variance/covariance matrix of fixed effects
@@ -446,7 +453,7 @@ ggplot(filter(SlowWave.correct, CompleteRep == 0), aes(Trial, MeanCurr, alpha = 
   scale_color_manual(values=c("blue", "blue", "red", "red")) +
   scale_linetype_manual(values=c("longdash", "solid", "longdash", "solid")) +
   theme_bw() +
-  coord_cartesian(ylim=c(325, 500))
+  coord_cartesian(ylim=c(-5.5, 2))
 #  ggtitle("Plotted with estimates from MLM") +  
   # theme(plot.title = element_text(hjust = 0.5, size = 20),
   #       axis.title = element_text(size=20),
@@ -461,7 +468,7 @@ Trial is scaled to range from 0 to 8 (instead of 1 to 800) so that the betas ass
 ``` {r}
 
 # find slopes with dummy coded model, trial is scaled
-begin.d <- lmer(MeanCurr ~ TrialType*prevTrialType*Trial.begin + (TrialType+prevTrialType|Subject), data = filter(SlowWave.correct, CompleteRep == 0))
+begin.d <- lmer(MeanCurr ~ Condition*prevCond*Trial.begin + (Condition+prevCond|Subject), data = filter(SlowWave.correct, CompleteRep == 0))
 
 parms <- fixef(begin.d) # fixed parameters from model
 vcmat <- vcov(begin.d) # variance/covariance matrix of fixed effects
@@ -517,7 +524,7 @@ kable(round(summary(begin.e)$coefficients[c(1:3,5),1:5], digits = 3))
 Error bars represent standard error.  
 ``` {r}
 # use dummy coded model
-begin.d <- lmer(MeanCurr ~ TrialType*prevTrialType*Trial.begin + (TrialType+prevTrialType|Subject), data = filter(SlowWave.correct, CompleteRep == 0))
+begin.d <- lmer(MeanCurr ~ Condition*prevCond*Trial.begin + (Condition+prevCond|Subject), data = filter(SlowWave.correct, CompleteRep == 0))
 parms <- fixef(begin.d) # fixed parameters from model
 vcmat <- vcov(begin.d) # variance/covariance matrix of fixed effects
 
@@ -555,7 +562,7 @@ ggplot(fin, aes(x = Previous, y = Estimate, group = Current, color = Current, li
   geom_errorbar(limits, width=0.2, linetype="solid") +
   ylab("FSW amplitude (uV)") +
   xlab("Previous Trial") +
-  coord_cartesian(ylim = c(350, 475)) +
+  coord_cartesian(ylim = c(-4.2, -.2)) +
   scale_color_manual(values=c("black", "red"), guide = guide_legend(title = "Current trial")) +
   scale_linetype_manual(values=c("solid", "dashed"), guide = F) +
   theme_bw() +
@@ -578,7 +585,7 @@ kable(round(summary(middle.e)$coefficients[c(1:3,5),1:5], digits = 3))
 Error bars represent standard error.  
 ``` {r}
 # use dummy coded model
-middle.d <- lmer(MeanCurr ~ TrialType*prevTrialType*Trial.middle + (TrialType+prevTrialType|Subject), data = filter(SlowWave.correct, CompleteRep == 0))
+middle.d <- lmer(MeanCurr ~ Condition*prevCond*Trial.middle + (Condition+prevCond|Subject), data = filter(SlowWave.correct, CompleteRep == 0))
 parms <- fixef(middle.d) # fixed parameters from model
 vcmat <- vcov(middle.d) # variance/covariance matrix of fixed effects
 
@@ -616,7 +623,7 @@ ggplot(fin, aes(x = Previous, y = Estimate, group = Current, color = Current, li
   geom_errorbar(limits, width=0.2, linetype="solid") +
   ylab("FSW amplitude (uV)") +
   xlab("Previous Trial") +
-  coord_cartesian(ylim = c(350, 475)) +
+  coord_cartesian(ylim = c(-4.2, -.2)) +
   scale_color_manual(values=c("black", "red"), guide = guide_legend(title = "Current trial")) +
   scale_linetype_manual(values=c("solid", "dashed"), guide = F) +
   theme_bw() +
@@ -639,7 +646,7 @@ kable(round(summary(end.e)$coefficients[c(1:3,5),1:5], digits = 3))
 Error bars represent standard error.  
 ``` {r}
 # use dummy coded model
-end.d <- lmer(MeanCurr ~ TrialType*prevTrialType*Trial.end + (TrialType+prevTrialType|Subject), data = filter(SlowWave.correct, CompleteRep == 0))
+end.d <- lmer(MeanCurr ~ Condition*prevCond*Trial.end + (Condition+prevCond|Subject), data = filter(SlowWave.correct, CompleteRep == 0))
 parms <- fixef(end.d) # fixed parameters from model
 vcmat <- vcov(end.d) # variance/covariance matrix of fixed effects
 
@@ -677,7 +684,7 @@ ggplot(fin, aes(x = Previous, y = Estimate, group = Current, color = Current, li
   geom_errorbar(limits, width=0.2, linetype="solid") +
   ylab("FSW amplitude (uV)") +
   xlab("Previous Trial") +
-  coord_cartesian(ylim = c(350, 475)) +
+  coord_cartesian(ylim = c(-4.2, -.2)) +
   scale_color_manual(values=c("black", "red"), guide = guide_legend(title = "Current trial")) +
   scale_linetype_manual(values=c("solid", "dashed"), guide = F) +
   theme_bw() +
@@ -688,3 +695,121 @@ ggplot(fin, aes(x = Previous, y = Estimate, group = Current, color = Current, li
   #       axis.text.y = element_text(size=16))
 
 ```
+
+#### C. TargetRep trials retained, included as covariate
+
+##### Plot over whole task, separately for TargetRep and non-TargetRep  
+**Slopes and estimates of lines are from the MLM, not fitted with OLS.** 
+
+``` {r}
+
+# find slopes and intercepts with dummy coded model, trial (unscaled) is included
+plot1.d <- lmer(MeanCurr ~ Condition*prevCond*Trial*TargetRep + (1|Subject) + (1|Electrode:Subject), data = SlowWave.correct)
+
+parms <- fixef(plot1.d) # fixed parameters from model
+vcmat <- vcov(plot1.d) # variance/covariance matrix of fixed effects
+
+# First calculate slopes
+
+## each row of this matrix defines entries of parms that we want to combine:
+STmat <- matrix(NA,8,16)
+STmat[1,] <- c(0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0) # slope for cC, TargetRep = 0
+STmat[2,] <- c(0,0,0,1,0,0,0,1,0,0,0,0,0,0,0,0) # slope for iC, TargetRep = 0
+STmat[3,] <- c(0,0,0,1,0,0,1,0,0,0,0,0,0,0,0,0) # slope for cI, TargetRep = 0
+STmat[4,] <- c(0,0,0,1,0,0,1,1,0,0,0,1,0,0,0,0) # slope for iI, TargetRep = 0
+
+STmat[5,] <- c(0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0) # slope for cC, TargetRep = 1
+STmat[6,] <- c(0,0,0,1,0,0,0,1,0,0,1,0,0,0,1,0) # slope for iC, TargetRep = 1
+STmat[7,] <- c(0,0,0,1,0,0,1,0,0,0,1,0,0,1,0,0) # slope for cI, TargetRep = 1
+STmat[8,] <- c(0,0,0,1,0,0,1,1,0,0,1,1,0,1,1,1) # slope for iI, TargetRep = 1
+
+Sparest <- STmat %*% parms          # see above for notation
+Snewvc <- STmat %*% vcmat %*% t(STmat)
+Sses <- sqrt(diag(Snewvc)) 
+
+slopes = cbind(Sparest, Sses) %>% as.data.frame()
+names(slopes) = c("Slope", "Slope_SE")
+
+# Next calculate intercepts
+
+## each row of this matrix defines entries of parms that we want to combine:
+ITmat <- matrix(NA,8,16)
+ITmat[1,] <- c(1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0) # intercept for cC, TargetRep = 0
+ITmat[2,] <- c(1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0) # intercept for iC, TargetRep = 0
+ITmat[3,] <- c(1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0) # intercept for cI, TargetRep = 0
+ITmat[4,] <- c(1,1,1,0,0,1,0,0,0,0,0,0,0,0,0,0) # intercept for iI, TargetRep = 0
+
+ITmat[5,] <- c(1,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0) # intercept for cC, TargetRep = 1
+ITmat[6,] <- c(1,0,1,0,1,0,0,0,0,1,0,0,0,0,0,0) # intercept for iC, TargetRep = 1
+ITmat[7,] <- c(1,1,0,0,1,0,0,0,1,0,0,0,0,0,0,0) # intercept for cI, TargetRep = 1
+ITmat[8,] <- c(1,1,1,0,1,1,0,0,1,1,0,0,1,0,0,0) # intercept for iI, TargetRep = 1
+
+Iparest <- ITmat %*% parms          # see above for notation
+Inewvc <- ITmat %*% vcmat %*% t(ITmat)
+Ises <- sqrt(diag(Inewvc)) 
+
+## final results
+intercepts = cbind(Iparest, Ises) %>% as.data.frame()
+names(intercepts) = c("Intercept", "Intercept_SE")
+
+forPlotting = cbind(slopes, intercepts)
+
+# label for understanding
+forPlotting$TrialCondition = rep(c("cC", "iC", "cI", "iI"),2)
+forPlotting$TrialCondition = factor(forPlotting$TrialCondition)
+forPlotting$TargetRep = rep(c(0, 1), each=4)
+forPlotting$TargetRep = factor(forPlotting$TargetRep)
+
+
+# BINGO -------------------------------------------------------------------
+ggplot(filter(SlowWave.correct, TargetRep == 0), aes(Trial, MeanCurr)) +
+  geom_point(alpha=0) +
+  geom_abline(data = forPlotting[1:4,], aes(intercept=Intercept, slope=Slope, color = TrialCondition, linetype = TrialCondition), size=1)+
+  labs(x = "Trial", y = "FSW amplitude (uV)") +
+  theme_bw() +
+  ggtitle("No TargetRep (TargetRep = 0)") +
+  coord_cartesian(ylim=c(-5.5, 2)) +
+  theme(plot.title = element_text(hjust = 0.5))
+
+ggplot(filter(SlowWave.correct, TargetRep == 1), aes(Trial, MeanCurr)) +
+  geom_point(alpha=0) +
+  geom_abline(data = forPlotting[5:8,], aes(intercept=Intercept, slope=Slope, color = TrialCondition, linetype = TrialCondition), size=1)+
+  labs(x = "Trial", y = "FSW amplitude (uV)") +
+  theme_bw() +
+  ggtitle("TargetRep (TargetRep = 1)") +
+  coord_cartesian(ylim=c(-5.5, 2)) +
+  theme(plot.title = element_text(hjust = 0.5))
+
+```
+
+##### Beginning of the task
+Current and Previous are effect coded, trial ranges from 0 to 8.
+``` {r}
+begin.e = lmer(MeanCurr ~ Current.e*Previous.e*Trial.begin*TargetRep + (1|Subject), data = SlowWave.correct)
+
+kable(round(summary(begin.e)$coefficients[c(1:3,6),1:5], digits = 3))
+# interactions with trial
+kable(round(summary(begin.e)$coefficients[c(4, 7:8, 12, 11, 14:16),1:5], digits = 3))
+# interactions with target
+kable(round(summary(begin.e)$coefficients[c(5, 9:10, 13),1:5], digits = 3))
+
+```
+
+##### Middle of the task
+Current and Previous are effect coded, trial ranges from -4 to 4.
+``` {r}
+middle.e = lmer(MeanCurr ~ Current.e*Previous.e*Trial.middle*TargetRep + (1|Subject), data = SlowWave.correct)
+
+kable(round(summary(middle.e)$coefficients[c(1:3,6),1:5], digits = 3))
+kable(round(summary(middle.e)$coefficients[c(5, 9:10, 13),1:5], digits = 3))
+```
+
+##### End of the task
+Current and Previous are effect coded, trial ranges from -8 to 0.
+``` {r}
+end.e = lmer(MeanCurr ~ Current.e*Previous.e*Trial.end*TargetRep + (1|Subject), data = SlowWave.correct)
+
+kable(round(summary(end.e)$coefficients[c(1:3,6),1:5], digits = 3))
+kable(round(summary(end.e)$coefficients[c(5, 9:10, 13),1:5], digits = 3))
+```
+

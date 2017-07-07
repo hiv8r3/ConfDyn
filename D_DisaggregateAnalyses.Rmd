@@ -1,6 +1,6 @@
 ---
 title: Disaggregate analyses
-author: Hannah, 6/19/2017
+author: Hannah, 6/29/2017
 output:
   html_document:
     highlight: pygments
@@ -20,10 +20,12 @@ MeanCent_dat = read.delim("RT_N1_N2_FSW_FSWPrev_MeanCent.txt")
 MeanCent_dat$RT[MeanCent_dat$RT == -7] = NA
 
 MeanCent_dat$Trial.scaled = (MeanCent_dat$Trial-1)/100
-```
-**Major changes: Reknitted with new data (trials fixed for subs 2, 4, 8, 16, 17, 19, 30, 59, 70, 72). Doesn't include 19, 74, or 137 because of difficulty matching up RT and ERP data. **
 
-**Added FSW x Current x Previous -> N2**
+MeanCent_dat = filter(MeanCent_dat, !(Subject == 4 & (Trial >= 401 & Trial <=600)))
+```
+**Major changes: Reknitted with new data (trials fixed for subs 2, 4, 8, 16, 17, 19, 30, 59, 70, 72). Doesn't include 19, 74, or 137 because of difficulty matching up RT and ERP data. Block 3 of Subject 4 is also excluded.**
+
+**Includes FSW -> N1.**
 
 **Sample includes 33 subjects.**  
 
