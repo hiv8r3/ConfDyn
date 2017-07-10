@@ -1,6 +1,6 @@
 ---
 title: N2analyses
-author: Hannah, 3/31/17
+author: Hannah, 7/9/17
 output:
   html_document:
     highlight: pygments
@@ -17,7 +17,7 @@ require(lmerTest)
 require(ggplot2)
 ```
 
-**Major changes: Reknitted with new data (trials fixed for subs 2, 4, 8, 16, 17, 19, 30, 59, 70, 72. Also, 74 and 19 were missing before, are now included.**
+**Major changes: Updated plot of change over time to get rid of points and include CIs.**
 
 Curt reprocessed the data using an automatic artifact rejection process with +- 75 uV as the threshold for rejection. He quantified the N2 for each trial between [put N2 interval here]. I selected the trials that fit these criteria:
 
@@ -45,7 +45,16 @@ Besides that, ERP data is completely missing for subs 36, 37, 39, 40, 42, 43, 46
 N2.correct = read.delim("./AllSubs_TBTaverages_N2_Correct_withPrevious_EventFixed.txt")
 
 tapply(N2.correct$MeanCurr, N2.correct$Condition, mean, na.rm=T)
+tapply(N2.correct$MeanCurr, N2.correct$Condition, sd, na.rm=T)
 tapply(N2.correct$MeanCurr, N2.correct$prevCond, mean, na.rm=T)
+```
+
+Average number of trials in each condition for each subject:
+``` {r}
+data.frame(iC = nrow(filter(N2.correct, TrialCondition == "Previous incompatible - Current compatible"))/36/9,
+           cC = nrow(filter(N2.correct, TrialCondition == "Previous compatible - Current compatible"))/36/9,
+           cI = nrow(filter(N2.correct, TrialCondition == "Previous compatible - Current incompatible"))/36/9,
+           iI = nrow(filter(N2.correct, TrialCondition == "Previous incompatible - Current incompatible"))/36/9)
 
 # estimate model (dummy code) to find marginal means-- doesn't include trial
 plot1 = lmer(MeanCurr ~ Condition*prevCond + (Condition+prevCond|Subject), data = N2.correct)
@@ -176,28 +185,94 @@ names(intercepts) = c("Intercept", "Intercept_SE")
 forPlotting = cbind(slopes, intercepts)
 
 # label for understanding
-forPlotting$TrialCondition = c("Previous compatible - Current compatible",
-                          "Previous incompatible - Current compatible",
-                          "Previous compatible - Current incompatible",
-                          "Previous incompatible - Current incompatible")
+forPlotting$TrialCondition = c("cC", "iC", "cI", "iI")
 
+# make separate matrices for weights to calc SES for each condition
+numTrials = 800
+numFixed = 8 # refers to the number of rows in the fixed effects (intercept, previous, current, trial, interactions, etc.)
+numConditions = 4
 
-# BINGO -------------------------------------------------------------------
-ggplot(N2.correct[!(is.na(N2.correct$TrialCondition)),], aes(Trial, MeanCurr, alpha = TrialCondition, color = TrialCondition, shape = TrialCondition)) +
-  geom_point() +
-  geom_abline(data = forPlotting, aes(intercept=Intercept, slope=Slope, color = TrialCondition, linetype = TrialCondition), size=1)+
+# cC
+cC.SE <- matrix(NA,numTrials,numFixed) # matrix will have numTrials rows and numFixed columns. Here, that's 800 rows and 8 columns
+cC.SE[,1] = 1 # first column is intercept
+cC.SE[,2] = 0 # second column is current 
+cC.SE[,3] = 0 # third column is previous
+cC.SE[,4] = 1:numTrials # fourth column is trial
+cC.SE[,5] = 0 # fifth column is current*previous
+cC.SE[,6] = 0 # sixth column is current*trial
+cC.SE[,7] = 0 # seventh column is previous*trial
+cC.SE[,8] = 0 # eighth column is current*previous*trial
+
+# cI
+cI.SE <- matrix(NA,numTrials,numFixed) # matrix will have numTrials rows and numFixed columns. Here, that's 800 rows and 8 columns
+cI.SE[,1] = 1 # first column is intercept
+cI.SE[,2] = 1 # second column is current 
+cI.SE[,3] = 0 # third column is previous
+cI.SE[,4] = 1:numTrials # fourth column is trial
+cI.SE[,5] = 0 # fifth column is current*previous
+cI.SE[,6] = 1:numTrials # sixth column is current*trial
+cI.SE[,7] = 0 # seventh column is previous*trial
+cI.SE[,8] = 0 # eighth column is current*previous*trial
+
+# iC
+iC.SE <- matrix(NA,numTrials,numFixed) # matrix will have numTrials rows and numFixed columns. Here, that's 800 rows and 8 columns
+iC.SE[,1] = 1 # first column is intercept
+iC.SE[,2] = 0 # second column is current 
+iC.SE[,3] = 1 # third column is previous
+iC.SE[,4] = 1:numTrials # fourth column is trial
+iC.SE[,5] = 0 # fifth column is current*previous
+iC.SE[,6] = 0 # sixth column is current*trial
+iC.SE[,7] = 1:numTrials # seventh column is previous*trial
+iC.SE[,8] = 0 # eighth column is current*previous*trial
+
+# iI
+iI.SE <- matrix(NA,numTrials,numFixed) # matrix will have numTrials rows and numFixed columns. Here, that's 800 rows and 8 columns
+iI.SE[,1] = 1 # first column is intercept
+iI.SE[,2] = 1 # second column is current 
+iI.SE[,3] = 1 # third column is previous
+iI.SE[,4] = 1:numTrials # fourth column is trial
+iI.SE[,5] = 1 # fifth column is current*previous
+iI.SE[,6] = 1:numTrials # sixth column is current*trial
+iI.SE[,7] = 1:numTrials # seventh column is previous*trial
+iI.SE[,8] = 1:numTrials # eighth column is current*previous*trial
+
+SETmat = rbind(cC.SE, iC.SE, cI.SE, iI.SE)
+newvc <- SETmat %*% vcmat %*% t(SETmat)
+ses <- sqrt(diag(newvc)) # long string of SEs for each trial, conditions and rows are long
+
+SE.dat = data.frame(Condition = rep(c("cC", "iC", "cI", "iI"), each=numTrials), Trial = rep(c(1:numTrials), numConditions), SE = ses)
+
+# sloppy, and there's probably a better way of doing this
+# but take slope and intercept and calculate all the points on the line for each trial so that I can calculate upper and lower 95% CIs 
+SE.dat$Point = NULL
+for (i in c("cC", "iC", "cI", "iI")){
+  SE.dat$Point[SE.dat$Condition == i] = forPlotting$Intercept[forPlotting$TrialCondition == i] + 1:numTrials*forPlotting$Slope[forPlotting$TrialCondition == i]
+}
+
+# calculate upper and lower bound (+/- 1 SE)
+SE.dat$upper = SE.dat$Point + SE.dat$SE
+SE.dat$lower = SE.dat$Point - SE.dat$SE
+
+# Revised plot- BINGO
+ggplot(SE.dat, aes(Trial, Point, group = Condition)) +
+  geom_abline(data = forPlotting, aes(intercept=Intercept, slope=Slope, color=TrialCondition, linetype=TrialCondition),
+              size = 1)+
+  geom_ribbon(aes(ymin=lower, ymax=upper, x = Trial, color = Condition),
+              linetype = "dotted",
+              alpha = .1) +
   labs(x = "Trial", y = "N2 Amplitude (uV)") +
-  scale_shape_manual(values=c(1,19,1,19)) +
-  scale_alpha_manual(values=c(.06,.06,.06,.06)) +
-  scale_color_manual(values=c("blue", "blue", "red", "red")) +
+  #scale_alpha_manual(values=c(.1,.1,.1,.1)) +
+  scale_color_manual(values=c("navy", "navy", "magenta1", "magenta1")) +
   scale_linetype_manual(values=c("longdash", "solid", "longdash", "solid")) +
   theme_bw() +
-  coord_cartesian(ylim=c(-2.5, 5)) +
-#  ggtitle("Plotted with estimates from MLM") + 
+  scale_y_continuous(limits =c(-1.7, 5), expand=c(0,0)) +
+  scale_x_continuous(expand=c(0,0), breaks=c(0, 100, 200, 300, 400, 500, 600, 700, 800)) + 
+#  ggtitle("Plotted with estimates from MLM") +  
   theme(plot.title = element_text(hjust = 0.5, size = 20),
         axis.title = element_text(size=20),
         axis.text.x = element_text(size=16),
         axis.text.y = element_text(size=16))
+
 
 ggsave("./Figures/Figure2.tiff", width = 7, height = 5)
 

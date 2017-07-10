@@ -23,7 +23,7 @@ ERPline = geom_line(lwd=1.1,
 
 condLinetype = c("longdash", "solid", "longdash", "solid")
 
-condColors = c("blue", "blue", "red", "red")
+condColors = c("navy", "navy", "magenta1", "magenta1")
 
 none = element_blank() 
 

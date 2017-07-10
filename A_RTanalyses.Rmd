@@ -58,7 +58,7 @@ dat.use = dat[dat$Condition == 4|dat$Condition == 5,] %>%
 dat.use$Condition = paste(dat.use$prevTrialType, dat.use$TrialType, sep="_")
 
 tapply(dat.use$RTdrop100_2000, dat.use$TrialType, mean)
-tapply(dat.use$RTdrop100_2000, dat.use$Condition, mean)
+tapply(dat.use$RTdrop100_2000, dat.use$TrialType, sd)
 
 ```
 
@@ -276,9 +276,6 @@ for (i in c("cC", "iC", "cI", "iI")){
 SE.dat$upper = SE.dat$Point + SE.dat$SE
 SE.dat$lower = SE.dat$Point - SE.dat$SE
 
-ggplot(SE.dat, aes(Trial, Point, group = Condition)) +
-  geom_abline(data = forPlotting, aes(intercept=Intercept, slope=Slope, color = TrialCondition)) +
-  geom_ribbon(aes(ymin=lower, ymax=upper, x = Trial), alpha = 0, linetype = "dashed", color = "black")
 
 # BINGO -------------------------------------------------------------------
 ggplot(SE.dat, aes(Trial, Point, group = Condition)) +
@@ -289,7 +286,7 @@ ggplot(SE.dat, aes(Trial, Point, group = Condition)) +
               alpha = .1) +
   labs(x = "Trial", y = "Reaction Time (ms)") +
   #scale_alpha_manual(values=c(.1,.1,.1,.1)) +
-  scale_color_manual(values=c("blue", "blue", "red", "red")) +
+  scale_color_manual(values=c("navy", "navy", "magenta1", "magenta1")) +
   scale_linetype_manual(values=c("longdash", "solid", "longdash", "solid")) +
   theme_bw() +
   scale_y_continuous(limits =c(325, 500), expand=c(0,0)) +

@@ -22,6 +22,7 @@ MeanCent_dat$RT[MeanCent_dat$RT == -7] = NA
 MeanCent_dat$Trial.scaled = (MeanCent_dat$Trial-1)/100
 
 MeanCent_dat = filter(MeanCent_dat, !(Subject == 4 & (Trial >= 401 & Trial <=600)))
+
 ```
 **Major changes: Reknitted with new data (trials fixed for subs 2, 4, 8, 16, 17, 19, 30, 59, 70, 72). Doesn't include 19, 74, or 137 because of difficulty matching up RT and ERP data. Block 3 of Subject 4 is also excluded.**
 
@@ -40,6 +41,14 @@ A datapoint will be included if:
 
 SlowWaveMean indicates the between-subject effect.  
 SlowWaveCent indicates the within-subject effect.  
+
+Number of trials in each condition for each subject on average:
+``` {r}
+data.frame(iC = nrow(filter(MeanCent_dat, Cell == "Previous incompatible - Current compatible"))/33,
+           cC = nrow(filter(MeanCent_dat, Cell == "Previous compatible - Current compatible"))/36,
+           cI = nrow(filter(MeanCent_dat, Cell == "Previous compatible - Current incompatible"))/33,
+           iI = nrow(filter(MeanCent_dat, Cell == "Previous incompatible - Current incompatible"))/33)
+```
 
 ### 1. SW on one trial predicting N2 on the following trial
 ```{r data1}
