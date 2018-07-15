@@ -1,7 +1,0 @@
-"0","fm2 <- lmer(MeanCurr ~ Condition*prevCond*Trial + # need to use dummy coded variables, not effect coded
-       (Condition*prevCond|Subject) + (1|Electrode:Subject), data = SlowWave.correct)
-fm2 <- lmer(MeanCurr ~ Condition*prevCond*Trial + # need to use dummy coded variables, not effect coded
-       (Condition*prevCond|Subject) + (1|Electrode:Subject), data = SlowWave.correct)
-"
-"2","
-"
